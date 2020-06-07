@@ -27,7 +27,8 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     async function loadFoods(): Promise<void> {
-      // TODO LOAD FOODS
+      const { data: allFoods } = await api.get<IFoodPlate[]>('/foods');
+      setFoods(allFoods);
     }
 
     loadFoods();
@@ -37,7 +38,10 @@ const Dashboard: React.FC = () => {
     food: Omit<IFoodPlate, 'id' | 'available'>,
   ): Promise<void> {
     try {
-      // TODO ADD A NEW FOOD PLATE TO THE API
+      const newFood = { ...food, available: true };
+      const { data: savedFood } = await api.post<IFoodPlate>('/foods', newFood);
+
+      setFoods([...foods, savedFood]);
     } catch (err) {
       console.log(err);
     }
@@ -46,11 +50,34 @@ const Dashboard: React.FC = () => {
   async function handleUpdateFood(
     food: Omit<IFoodPlate, 'id' | 'available'>,
   ): Promise<void> {
-    // TODO UPDATE A FOOD PLATE ON THE API
+    const updatedFood = { ...editingFood };
+    updatedFood.name = food.name;
+    updatedFood.description = food.description;
+    updatedFood.image = food.image;
+    updatedFood.price = food.price;
+
+    await api.put(`/foods/${updatedFood.id}`, updatedFood);
+
+    const updatedFoods = foods.map(findFood =>
+      findFood.id === updatedFood.id ? updatedFood : findFood,
+    );
+
+    setFoods(updatedFoods);
   }
 
   async function handleDeleteFood(id: number): Promise<void> {
-    // TODO DELETE A FOOD PLATE FROM THE API
+    const allFoods = [...foods];
+    const findIndex = allFoods.findIndex(food => food.id === id);
+
+    if (findIndex < 0) {
+      throw new Error('Food not found');
+    }
+
+    await api.delete(`/foods/${id}`);
+
+    allFoods.splice(findIndex, 1);
+
+    setFoods(allFoods);
   }
 
   function toggleModal(): void {
@@ -63,6 +90,8 @@ const Dashboard: React.FC = () => {
 
   function handleEditFood(food: IFoodPlate): void {
     // TODO SET THE CURRENT EDITING FOOD ID IN THE STATE
+    setEditingFood(food);
+    toggleEditModal();
   }
 
   return (
